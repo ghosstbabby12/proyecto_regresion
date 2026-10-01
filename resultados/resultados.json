@@ -1,0 +1,212 @@
+{
+  "dolar": {
+    "titulo": "Predicción del precio del dólar",
+    "n_registros": 500,
+    "ecuacion": "Precio_Dolar = 3985.7833 + 4.9843·Dia - 870.7317·Inflacion - 1.3774·Tasa_interes",
+    "intercepto": 3985.7832908942446,
+    "coeficientes": [
+      {
+        "variable": "Dia",
+        "coeficiente": 4.984338715884639,
+        "error_std": 0.018255497399307645,
+        "t": 273.0322054152123,
+        "p_valor": 0.0,
+        "beta_estandarizado": 0.9975678768755011
+      },
+      {
+        "variable": "Inflacion",
+        "coeficiente": -870.7317083114699,
+        "error_std": 521.8013184238079,
+        "t": -1.6687035420716592,
+        "p_valor": 0.09596653401387623,
+        "beta_estandarizado": -0.006083410883003842
+      },
+      {
+        "variable": "Tasa_interes",
+        "coeficiente": -1.3774312878081227,
+        "error_std": 5.357913330910649,
+        "t": -0.2570835328487872,
+        "p_valor": 0.7972478128004399,
+        "beta_estandarizado": -0.0009405138896582383
+      }
+    ],
+    "metricas": {
+      "entrenamiento": {
+        "MSE": 2580.462030262353,
+        "RMSE": 50.79824829915253,
+        "MAE": 40.468695560401564,
+        "R2": 0.9947566971157091,
+        "R2_ajustado": 0.9947169751241615
+      },
+      "prueba": {
+        "MSE": 2376.970876572469,
+        "RMSE": 48.75418829775006,
+        "MAE": 37.00645389507641,
+        "R2": 0.9963128117569109
+      }
+    },
+    "variable_mayor_impacto": "Dia",
+    "correlaciones": {
+      "Dia": 0.9976,
+      "Inflacion": 0.0196,
+      "Tasa_interes": 0.0743
+    },
+    "correlaciones_entre_x": {
+      "Dia": {
+        "Dia": 1.0,
+        "Inflacion": 0.0218,
+        "Tasa_interes": 0.076
+      },
+      "Inflacion": {
+        "Dia": 0.0218,
+        "Inflacion": 1.0,
+        "Tasa_interes": -0.0757
+      },
+      "Tasa_interes": {
+        "Dia": 0.076,
+        "Inflacion": -0.0757,
+        "Tasa_interes": 1.0
+      }
+    }
+  },
+  "glucosa": {
+    "titulo": "Predicción del nivel de glucosa en sangre",
+    "n_registros": 2000,
+    "ecuacion": "Nivel_Glucosa = 65.8609 + 1.2266·Edad + 0.9334·IMC - 2.0853·Actividad_Fisica",
+    "intercepto": 65.86086530452523,
+    "coeficientes": [
+      {
+        "variable": "Edad",
+        "coeficiente": 1.226590034499573,
+        "error_std": 0.02184894557880156,
+        "t": 56.139552825361235,
+        "p_valor": 0.0,
+        "beta_estandarizado": 0.7873655881000831
+      },
+      {
+        "variable": "IMC",
+        "coeficiente": 0.9333730560350991,
+        "error_std": 0.09633993358157064,
+        "t": 9.688329868369857,
+        "p_valor": 0.0,
+        "beta_estandarizado": 0.1358776513538697
+      },
+      {
+        "variable": "Actividad_Fisica",
+        "coeficiente": -2.0852763430432817,
+        "error_std": 0.13120879986920714,
+        "t": -15.892808600657483,
+        "p_valor": 0.0,
+        "beta_estandarizado": -0.22288223396670193
+      }
+    ],
+    "metricas": {
+      "entrenamiento": {
+        "MSE": 235.51368494080384,
+        "RMSE": 15.346455126210868,
+        "MAE": 12.109321980867112,
+        "R2": 0.6862121817902269,
+        "R2_ajustado": 0.6856223550642687
+      },
+      "prueba": {
+        "MSE": 233.6930004508583,
+        "RMSE": 15.28702065318348,
+        "MAE": 12.219782574464597,
+        "R2": 0.6813715865404839
+      }
+    },
+    "variable_mayor_impacto": "Edad",
+    "correlaciones": {
+      "Edad": 0.7898,
+      "IMC": 0.1383,
+      "Actividad_Fisica": -0.1984
+    },
+    "correlaciones_entre_x": {
+      "Edad": {
+        "Edad": 1.0,
+        "IMC": 0.0156,
+        "Actividad_Fisica": 0.0178
+      },
+      "IMC": {
+        "Edad": 0.0156,
+        "IMC": 1.0,
+        "Actividad_Fisica": 0.0128
+      },
+      "Actividad_Fisica": {
+        "Edad": 0.0178,
+        "IMC": 0.0128,
+        "Actividad_Fisica": 1.0
+      }
+    }
+  },
+  "energia": {
+    "titulo": "Predicción del consumo de energía eléctrica",
+    "n_registros": 10000,
+    "ecuacion": "Consumo_Energia = 101.2882 + 9.9529·Temperatura + 5.0198·Hora - 3.0312·Dia_Semana",
+    "intercepto": 101.28823172887473,
+    "coeficientes": [
+      {
+        "variable": "Temperatura",
+        "coeficiente": 9.952865907791663,
+        "error_std": 0.04478814667879127,
+        "t": 222.22098134961874,
+        "p_valor": 0.0,
+        "beta_estandarizado": 0.7802901822787961
+      },
+      {
+        "variable": "Hora",
+        "coeficiente": 5.019813389575861,
+        "error_std": 0.03225812780588813,
+        "t": 155.613909765079,
+        "p_valor": 0.0,
+        "beta_estandarizado": 0.5464071944729574
+      },
+      {
+        "variable": "Dia_Semana",
+        "coeficiente": -3.031176657433646,
+        "error_std": 0.11150934861619481,
+        "t": -27.18316172634713,
+        "p_valor": 0.0,
+        "beta_estandarizado": -0.09543221882395818
+      }
+    ],
+    "metricas": {
+      "entrenamiento": {
+        "MSE": 399.1936567789163,
+        "RMSE": 19.979831250011006,
+        "MAE": 15.917385945120808,
+        "R2": 0.9014539402878962,
+        "R2_ajustado": 0.9014169670288746
+      },
+      "prueba": {
+        "MSE": 429.5186917603558,
+        "RMSE": 20.72483273178232,
+        "MAE": 16.510114230844557,
+        "R2": 0.8968196536749335
+      }
+    },
+    "variable_mayor_impacto": "Temperatura",
+    "correlaciones": {
+      "Temperatura": 0.7719,
+      "Hora": 0.529,
+      "Dia_Semana": -0.1022
+    },
+    "correlaciones_entre_x": {
+      "Temperatura": {
+        "Temperatura": 1.0,
+        "Hora": -0.0186,
+        "Dia_Semana": -0.0069
+      },
+      "Hora": {
+        "Temperatura": -0.0186,
+        "Hora": 1.0,
+        "Dia_Semana": -0.0001
+      },
+      "Dia_Semana": {
+        "Temperatura": -0.0069,
+        "Hora": -0.0001,
+        "Dia_Semana": 1.0
+      }
+    }
+  }
+}

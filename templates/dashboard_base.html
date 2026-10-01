@@ -1,0 +1,513 @@
+<title>Panel de Regresión Múltiple</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@600;700;800&display=swap">
+<style>
+/* Layout: barra de pestañas por ejercicio → indicadores → ecuación → cuadrícula 2 columnas de gráficas → tabla de datos */
+:root {
+  --bg: #f3f5f4; --surface: #fcfcfb; --ink: #111614; --ink-2: #4b5550; --muted: #7d8782;
+  --grid: #e3e6e3; --axis: #c3c8c4; --line: rgba(17,22,20,.10); --hover: rgba(17,22,20,.04);
+  --s-dolar: #2a78d6; --s-glucosa: #eb6834; --s-energia: #1baf7a;
+  --pos: #2a78d6; --neg: #e34948; --mid: #f0efec;
+  --good: #006300; --good-bg: #e2f0e2; --warn: #855600; --warn-bg: #fbefd2;
+  --font-d: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+  --font-b: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-m: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1110; --surface: #181b1a; --ink: #f1f4f2; --ink-2: #bfc6c2; --muted: #89928d;
+    --grid: #282c2a; --axis: #3a3f3c; --line: rgba(255,255,255,.10); --hover: rgba(255,255,255,.05);
+    --s-dolar: #3987e5; --s-glucosa: #d95926; --s-energia: #199e70;
+    --pos: #3987e5; --neg: #e66767; --mid: #383835;
+    --good: #2fbf2f; --good-bg: #16301a; --warn: #fab219; --warn-bg: #33290f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1110; --surface: #181b1a; --ink: #f1f4f2; --ink-2: #bfc6c2; --muted: #89928d;
+  --grid: #282c2a; --axis: #3a3f3c; --line: rgba(255,255,255,.10); --hover: rgba(255,255,255,.05);
+  --s-dolar: #3987e5; --s-glucosa: #d95926; --s-energia: #199e70;
+  --pos: #3987e5; --neg: #e66767; --mid: #383835;
+  --good: #2fbf2f; --good-bg: #16301a; --warn: #fab219; --warn-bg: #33290f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-b); font-size: 14px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 48px; display: flex; flex-direction: column; gap: 18px; }
+.ds-dolar { --acc: var(--s-dolar); } .ds-glucosa { --acc: var(--s-glucosa); } .ds-energia { --acc: var(--s-energia); }
+
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+header h1 { font-family: var(--font-d); font-weight: 800; font-size: 1.75rem; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+header p { margin: 2px 0 0; color: var(--ink-2); max-width: 60ch; }
+.eyebrow { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+.tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; flex-wrap: wrap; }
+.tabs button { font: 600 .9rem var(--font-b); color: var(--ink-2); background: none; border: 0; border-radius: 7px; padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.tabs button:hover { background: var(--hover); color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.tabs .dot { width: 9px; height: 9px; border-radius: 50%; }
+button:focus-visible, input:focus-visible, select:focus-visible, th:focus-visible { outline: 2px solid var(--acc, var(--s-dolar)); outline-offset: 2px; }
+
+.titulo-ds { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.titulo-ds h2 { font-family: var(--font-d); font-weight: 700; font-size: 1.3rem; margin: 0; letter-spacing: -0.01em; }
+.titulo-ds span { color: var(--muted); }
+
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tile .v { font-family: var(--font-d); font-weight: 700; font-size: 1.6rem; letter-spacing: -0.01em; line-height: 1.15; overflow-wrap: anywhere; }
+.tile .s { color: var(--ink-2); font-size: .82rem; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; width: fit-content; }
+.pill.good { color: var(--good); background: var(--good-bg); }
+.pill.warn { color: var(--warn); background: var(--warn-bg); }
+.pill svg { width: 11px; height: 11px; }
+
+.ecuacion { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--acc); border-radius: 10px; padding: 12px 16px; font-family: var(--font-m); font-size: .9rem; overflow-x: auto; white-space: nowrap; }
+.ecuacion .lbl { font-family: var(--font-b); margin-right: 10px; }
+.ecuacion b { font-weight: 500; color: var(--ink); } .ecuacion i { font-style: normal; color: var(--ink-2); }
+
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.card-h h3 { font-family: var(--font-d); font-weight: 700; font-size: 1rem; margin: 0; }
+.card-h p { margin: 0; color: var(--muted); font-size: .82rem; width: 100%; }
+.chart { position: relative; height: 300px; }
+select, input[type=number] { font: 500 .85rem var(--font-b); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; }
+.mono { font-family: var(--font-m); font-variant-numeric: tabular-nums; }
+
+/* Simulador */
+.sim { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; }
+.sim-in { display: flex; flex-direction: column; gap: 14px; }
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.campo label { font-weight: 600; font-size: .86rem; }
+.campo label small { color: var(--muted); font-weight: 400; }
+.campo input[type=number] { width: 92px; text-align: right; font-family: var(--font-m); }
+.campo input[type=range] { width: 100%; accent-color: var(--acc); }
+.campo .rng { display: flex; justify-content: space-between; color: var(--muted); font-size: .74rem; font-family: var(--font-m); }
+.sim-out { background: var(--bg); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.sim-out .big { font-family: var(--font-d); font-weight: 800; font-size: 2.2rem; letter-spacing: -0.02em; line-height: 1; }
+.sim-out .u { color: var(--ink-2); font-size: .85rem; }
+.contrib { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; }
+.contrib div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); padding-bottom: 3px; }
+.contrib div span:last-child { font-family: var(--font-m); }
+.aviso { font-size: .8rem; color: var(--warn); background: var(--warn-bg); padding: 6px 10px; border-radius: 7px; }
+
+/* Coeficientes */
+.coefs { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.coefs td, .coefs th { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.coefs th { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.coefs td.n { text-align: right; font-family: var(--font-m); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dbar { position: relative; height: 14px; min-width: 110px; }
+.dbar::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--axis); }
+.dbar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+
+/* Correlaciones */
+.heat-wrap { overflow-x: auto; }
+.heat { border-collapse: separate; border-spacing: 2px; font-size: .8rem; margin: 0 auto; }
+.heat th { font-weight: 500; color: var(--ink-2); padding: 4px 6px; white-space: nowrap; }
+.heat thead th { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; height: 150px; vertical-align: bottom; }
+.heat tbody th { text-align: right; }
+.heat td { width: 64px; height: 44px; text-align: center; border-radius: 4px; font-family: var(--font-m); font-variant-numeric: tabular-nums; }
+.leyenda { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: .75rem; color: var(--muted); }
+.leyenda .barra { width: 160px; height: 8px; border-radius: 4px; }
+
+/* Tabla */
+.tabla-wrap { overflow-x: auto; }
+table.datos { width: 100%; border-collapse: collapse; font-size: .84rem; }
+table.datos th, table.datos td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+table.datos th { font-size: .74rem; color: var(--ink-2); font-weight: 600; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+table.datos th:hover { color: var(--ink); }
+table.datos td { font-family: var(--font-m); font-variant-numeric: tabular-nums; }
+table.datos tbody tr:hover { background: var(--hover); }
+td.alto { color: var(--warn); font-weight: 500; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink-2); font-size: .82rem; }
+.pager .btns { display: flex; gap: 6px; }
+.pager button { font: 600 .8rem var(--font-b); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 5px 12px; cursor: pointer; }
+.pager button:disabled { opacity: .4; cursor: default; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; color: var(--ink-2); cursor: pointer; }
+.chk input { accent-color: var(--acc); }
+footer { color: var(--muted); font-size: .78rem; text-align: center; }
+
+@media (max-width: 980px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .grid2, .sim { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .wrap { padding-inline: 16px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart { height: 260px; }
+  header h1 { font-size: 1.45rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap" id="app">
+  <header>
+    <div>
+      <div class="eyebrow">CRISP-DM · Regresión lineal múltiple</div>
+      <h1>Panel de Regresión Múltiple</h1>
+      <p>Explore los datos de los tres ejercicios, el ajuste de cada modelo y simule predicciones con la ecuación entrenada.</p>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </header>
+
+  <main id="main" style="display:flex;flex-direction:column;gap:18px">
+    <div class="titulo-ds"><h2 id="ds-titulo"></h2><span id="ds-sub"></span></div>
+    <section class="tiles" id="tiles"></section>
+    <div class="ecuacion" id="ecuacion"></div>
+
+    <section class="card">
+      <div class="card-h"><h3>Simulador de predicción</h3>
+        <p>Mueva los controles o escriba un valor. La predicción usa la ecuación del modelo; el error típico es ± RMSE de prueba.</p></div>
+      <div class="sim"><div class="sim-in" id="sim-in"></div><div class="sim-out" id="sim-out"></div></div>
+    </section>
+
+    <section class="grid2">
+      <div class="card">
+        <div class="card-h"><h3 id="sc-titulo">Relación con la variable</h3>
+          <select id="sel-x" aria-label="Variable del eje X"></select>
+          <p id="sc-sub"></p></div>
+        <div class="chart"><canvas id="ch-scatter" role="img" aria-label="Diagrama de dispersión"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Real vs. predicho</h3>
+          <p id="rp-sub">Cada punto es un registro. Cuanto más cerca de la diagonal, mejor la predicción.</p></div>
+        <div class="chart"><canvas id="ch-rp" role="img" aria-label="Valores reales frente a predichos"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Distribución</h3>
+          <select id="sel-h" aria-label="Variable del histograma"></select>
+          <p id="h-sub"></p></div>
+        <div class="chart"><canvas id="ch-hist" role="img" aria-label="Histograma"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Residuos</h3>
+          <p>Residuo = real − predicho. Si el modelo es adecuado se reparten alrededor de 0 sin forma marcada.</p></div>
+        <div class="chart"><canvas id="ch-res" role="img" aria-label="Residuos frente a predichos"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Impacto de cada variable</h3>
+          <p>Barra = coeficiente beta estandarizado (−1 a 1). Permite comparar variables con distinta escala.</p></div>
+        <table class="coefs" id="coefs"></table>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Matriz de correlación</h3>
+          <p>Coeficiente de Pearson calculado sobre todos los registros.</p></div>
+        <div class="heat-wrap"><table class="heat" id="heat"></table></div>
+        <div class="leyenda"><span>−1</span><span class="barra" id="ley-barra"></span><span>+1</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h3>Datos</h3>
+        <label class="chk"><input type="checkbox" id="solo-altos"> Solo residuos grandes (|residuo| &gt; 2·RMSE)</label>
+        <p>Haga clic en un encabezado para ordenar. Las columnas Predicho y Residuo se calculan con la ecuación del modelo.</p></div>
+      <div class="tabla-wrap"><table class="datos" id="tabla"></table></div>
+      <div class="pager"><span id="pg-info"></span>
+        <div class="btns"><button type="button" id="pg-prev">Anterior</button><button type="button" id="pg-next">Siguiente</button></div></div>
+    </section>
+  </main>
+
+  <footer>Minería de datos · CRISP-DM · Modelos de scikit-learn exportados con joblib</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const D = __DATOS__;
+
+const LBL = { Dia: "Día", Inflacion: "Inflación", Tasa_interes: "Tasa de interés", Precio_Dolar: "Precio del dólar",
+  Edad: "Edad", IMC: "IMC", Actividad_Fisica: "Actividad física", Nivel_Glucosa: "Nivel de glucosa",
+  Temperatura: "Temperatura", Hora: "Hora", Dia_Semana: "Día de la semana", Consumo_Energia: "Consumo de energía" };
+const UNI = { Dia: "día", Inflacion: "tasa", Tasa_interes: "%", Precio_Dolar: "pesos", Edad: "años", IMC: "kg/m²",
+  Actividad_Fisica: "h/semana", Nivel_Glucosa: "mg/dL", Temperatura: "°C", Hora: "h", Dia_Semana: "1 = lunes",
+  Consumo_Energia: "kWh" };
+const NOMBRE = { dolar: "Dólar", glucosa: "Glucosa", energia: "Energía" };
+const POR_PAGINA = 15;
+
+const nf = (v, d) => v.toLocaleString("es-CO", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+function fmt(v) {
+  const a = Math.abs(v);
+  return a >= 1000 ? nf(v, 1) : a >= 10 ? nf(v, 2) : a >= 1 ? nf(v, 3) : nf(v, 4);
+}
+
+// ---------- Preparación de cada conjunto ----------
+function pearson(a, b) {
+  const n = a.length; let ma = 0, mb = 0;
+  for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; }
+  ma /= n; mb /= n;
+  let sab = 0, saa = 0, sbb = 0;
+  for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; sab += x * y; saa += x * x; sbb += y * y; }
+  return sab / Math.sqrt(saa * sbb);
+}
+for (const k in D) {
+  const d = D[k], c = d.cols, n = c[d.target].length;
+  d.n = n;
+  d.coef = Object.fromEntries(d.res.coeficientes.map(x => [x.variable, x.coeficiente]));
+  d.pred = new Array(n); d.resid = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let y = d.res.intercepto;
+    for (const f of d.features) y += d.coef[f] * c[f][i];
+    d.pred[i] = y; d.resid[i] = c[d.target][i] - y;
+  }
+  d.vars = [...d.features, d.target];
+  d.stats = {};
+  for (const v of d.vars) {
+    const s = [...c[v]].sort((a, b) => a - b);
+    d.stats[v] = { min: s[0], max: s[s.length - 1], med: s[Math.floor(s.length / 2)],
+      ent: s.every(Number.isInteger), sorted: s };
+  }
+  d.corr = d.vars.map(a => d.vars.map(b => a === b ? 1 : pearson(c[a], c[b])));
+  d.ui = { x: d.res.variable_mayor_impacto, h: d.target, sort: null, dir: 1, page: 0, altos: false,
+    sim: Object.fromEntries(d.features.map(f => [f, d.stats[f].med])) };
+}
+
+// ---------- Tema ----------
+const $ = id => document.getElementById(id);
+function tok(name) { return getComputedStyle($("main")).getPropertyValue(name).trim(); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function mix(h1, h2, t) {
+  const a = parseInt(h1.slice(1), 16), b = parseInt(h2.slice(1), 16);
+  const ch = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
+let actual = "dolar";
+const charts = {};
+
+function baseOpts(xTitle, yTitle) {
+  const t = { ink: tok("--ink"), ink2: tok("--ink-2"), muted: tok("--muted"), grid: tok("--grid"), axis: tok("--axis"), surf: tok("--surface") };
+  const eje = txt => ({ type: "linear", title: { display: true, text: txt, color: t.muted, font: { size: 12 } },
+    grid: { color: t.grid }, border: { color: t.axis }, ticks: { color: t.muted, maxTicksLimit: 7, callback: v => fmt(v) } });
+  return { animation: false, responsive: true, maintainAspectRatio: false,
+    interaction: { mode: "nearest", intersect: true },
+    plugins: { legend: { display: false },
+      tooltip: { backgroundColor: t.surf, titleColor: t.ink, bodyColor: t.ink2, borderColor: t.axis, borderWidth: 1,
+        padding: 10, displayColors: false, titleFont: { weight: "600" } } },
+    scales: { x: eje(xTitle), y: eje(yTitle) } };
+}
+const ttl = v => `${LBL[v]} (${UNI[v]})`;
+
+// ---------- Render ----------
+function renderTabs() {
+  $("tabs").innerHTML = Object.keys(D).map(k =>
+    `<button type="button" role="tab" id="tab-${k}" aria-selected="${k === actual}" data-k="${k}">
+       <span class="dot" style="background:var(--s-${k})"></span>${NOMBRE[k]}</button>`).join("");
+}
+
+const ICON_OK = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 6.5l2.2 2.2L9.5 3.5"/></svg>';
+const ICON_W = '<svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l5.2 9.5H.8L6 1z"/><rect x="5.3" y="4.3" width="1.4" height="3.3" fill="var(--warn-bg)"/><rect x="5.3" y="8.2" width="1.4" height="1.3" fill="var(--warn-bg)"/></svg>';
+
+function renderResumen() {
+  const d = D[actual], m = d.res.metricas, r2 = m.prueba.R2;
+  $("main").className = "ds-" + actual;
+  $("ds-titulo").textContent = d.res.titulo;
+  $("ds-sub").textContent = `${nf(d.n, 0)} registros · variable objetivo: ${LBL[d.target]} (${d.unidad})`;
+  const ajuste = r2 >= 0.85 ? `<span class="pill good">${ICON_OK}Ajuste alto</span>` : `<span class="pill warn">${ICON_W}Ajuste moderado</span>`;
+  const top = d.res.variable_mayor_impacto, beta = d.res.coeficientes.find(c => c.variable === top).beta_estandarizado;
+  $("tiles").innerHTML = `
+    <div class="tile"><span class="eyebrow">R² prueba</span><span class="v">${nf(r2, 4)}</span>${ajuste}</div>
+    <div class="tile"><span class="eyebrow">Varianza explicada</span><span class="v">${nf(r2 * 100, 1)} %</span><span class="s">R² entrenamiento ${nf(m.entrenamiento.R2, 4)}</span></div>
+    <div class="tile"><span class="eyebrow">RMSE prueba</span><span class="v">${fmt(m.prueba.RMSE)}</span><span class="s">${d.unidad} · MSE ${fmt(m.prueba.MSE)}</span></div>
+    <div class="tile"><span class="eyebrow">MAE prueba</span><span class="v">${fmt(m.prueba.MAE)}</span><span class="s">${d.unidad} de error medio absoluto</span></div>
+    <div class="tile"><span class="eyebrow">Mayor impacto</span><span class="v">${LBL[top]}</span><span class="s">β estandarizado ${nf(beta, 3)}</span></div>`;
+  const terms = d.res.coeficientes.map(c =>
+    ` <i>${c.coeficiente >= 0 ? "+" : "−"}</i> ${nf(Math.abs(c.coeficiente), 4)}·<b>${c.variable}</b>`).join("");
+  $("ecuacion").innerHTML = `<span class="lbl eyebrow">Ecuación</span><b>${d.target}</b> <i>=</i> ${nf(d.res.intercepto, 4)}${terms}`;
+}
+
+function renderSim() {
+  const d = D[actual];
+  $("sim-in").innerHTML = d.features.map(f => {
+    const s = d.stats[f], paso = s.ent ? 1 : +((s.max - s.min) / 200).toPrecision(2);
+    return `<div class="campo"><div class="campo-top">
+        <label for="num-${f}">${LBL[f]} <small>(${UNI[f]})</small></label>
+        <input type="number" id="num-${f}" data-f="${f}" step="any" value="${+d.ui.sim[f].toPrecision(6)}"></div>
+      <input type="range" id="rng-${f}" data-f="${f}" min="${s.min}" max="${s.max}" step="${paso}" value="${d.ui.sim[f]}" aria-label="${LBL[f]}">
+      <div class="rng"><span>${fmt(s.min)}</span><span>mediana ${fmt(s.med)}</span><span>${fmt(s.max)}</span></div></div>`;
+  }).join("");
+  updateSim();
+}
+function updateSim() {
+  const d = D[actual], v = d.ui.sim;
+  let y = d.res.intercepto;
+  const filas = [`<div><span>Intercepto</span><span>${fmt(d.res.intercepto)}</span></div>`];
+  const avisos = [];
+  for (const f of d.features) {
+    const term = d.coef[f] * v[f]; y += term;
+    filas.push(`<div><span>${LBL[f]}: ${fmt(d.coef[f])} × ${fmt(v[f])}</span><span>${term >= 0 ? "+" : "−"}${fmt(Math.abs(term))}</span></div>`);
+    if (v[f] < d.stats[f].min || v[f] > d.stats[f].max) avisos.push(LBL[f]);
+  }
+  const s = d.stats[d.target].sorted;
+  let lo = 0, hi = s.length; while (lo < hi) { const mid = (lo + hi) >> 1; s[mid] <= y ? lo = mid + 1 : hi = mid; }
+  const pct = lo / s.length * 100, rmse = d.res.metricas.prueba.RMSE;
+  $("sim-out").innerHTML = `
+    <span class="eyebrow">${LBL[d.target]} estimado</span>
+    <span class="big">${fmt(y)}</span>
+    <span class="u">${d.unidad} · intervalo típico ${fmt(y - rmse)} – ${fmt(y + rmse)}</span>
+    <span class="u">Mayor que el ${nf(pct, 0)} % de los registros observados</span>
+    ${avisos.length ? `<div class="aviso">${avisos.join(", ")} fuera del rango de los datos: la predicción es una extrapolación.</div>` : ""}
+    <div class="contrib">${filas.join("")}</div>`;
+}
+
+function renderSelects() {
+  const d = D[actual];
+  $("sel-x").innerHTML = d.features.map(f => `<option value="${f}" ${f === d.ui.x ? "selected" : ""}>${LBL[f]}</option>`).join("");
+  $("sel-h").innerHTML = d.vars.map(f => `<option value="${f}" ${f === d.ui.h ? "selected" : ""}>${LBL[f]}</option>`).join("");
+}
+
+function puntos(xs, ys) { const out = new Array(xs.length); for (let i = 0; i < xs.length; i++) out[i] = { x: xs[i], y: ys[i] }; return out; }
+function mkChart(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id), cfg); }
+function radio(n) { return n > 5000 ? 1.6 : n > 1000 ? 2.2 : 3; }
+
+function chartScatter() {
+  const d = D[actual], xv = d.ui.x, xs = d.cols[xv], ys = d.cols[d.target], acc = tok("--acc"), ink = tok("--ink");
+  // recta de tendencia simple (una variable)
+  const st = d.stats[xv]; let mx = 0, my = 0; const n = xs.length;
+  for (let i = 0; i < n; i++) { mx += xs[i]; my += ys[i]; } mx /= n; my /= n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; }
+  const b = sxy / sxx, a = my - b * mx, r = d.corr[d.vars.indexOf(xv)][d.vars.length - 1];
+  $("sc-titulo").textContent = `${LBL[d.target]} según ${LBL[xv]}`;
+  $("sc-sub").textContent = `Correlación r = ${nf(r, 3)}. La línea es la tendencia de esta variable sola.`;
+  const o = baseOpts(ttl(xv), ttl(d.target));
+  o.plugins.tooltip.callbacks = { title: () => "", label: c => c.datasetIndex ? `Tendencia` :
+    [`${LBL[xv]}: ${fmt(c.raw.x)} ${UNI[xv]}`, `${LBL[d.target]}: ${fmt(c.raw.y)} ${d.unidad}`] };
+  mkChart("ch-scatter", { type: "scatter", options: o, data: { datasets: [
+    { data: puntos(xs, ys), backgroundColor: hexA(acc, n > 5000 ? .35 : .55), pointRadius: radio(n), pointHoverRadius: 6,
+      pointHoverBackgroundColor: acc, pointHoverBorderColor: tok("--surface"), pointHoverBorderWidth: 2 },
+    { type: "line", data: [{ x: st.min, y: a + b * st.min }, { x: st.max, y: a + b * st.max }], borderColor: ink,
+      borderWidth: 2, pointRadius: 0, borderDash: [6, 4] } ] } });
+}
+
+function chartRP() {
+  const d = D[actual], ys = d.cols[d.target], acc = tok("--acc"), n = d.n;
+  const s = d.stats[d.target], lo = Math.min(s.min, Math.min(...d.pred)), hi = Math.max(s.max, Math.max(...d.pred));
+  const o = baseOpts(`Real (${d.unidad})`, `Predicho (${d.unidad})`);
+  o.plugins.tooltip.callbacks = { title: () => "", label: c => c.datasetIndex ? "Predicción perfecta" :
+    [`Real: ${fmt(c.raw.x)}`, `Predicho: ${fmt(c.raw.y)}`, `Error: ${fmt(c.raw.x - c.raw.y)} ${d.unidad}`] };
+  mkChart("ch-rp", { type: "scatter", options: o, data: { datasets: [
+    { data: puntos(ys, d.pred), backgroundColor: hexA(acc, n > 5000 ? .35 : .55), pointRadius: radio(n), pointHoverRadius: 6,
+      pointHoverBackgroundColor: acc, pointHoverBorderColor: tok("--surface"), pointHoverBorderWidth: 2 },
+    { type: "line", data: [{ x: lo, y: lo }, { x: hi, y: hi }], borderColor: tok("--ink"), borderWidth: 2, pointRadius: 0, borderDash: [6, 4] } ] } });
+}
+
+function chartRes() {
+  const d = D[actual], acc = tok("--acc"), n = d.n, rmse = d.res.metricas.prueba.RMSE;
+  const plo = Math.min(...d.pred), phi = Math.max(...d.pred);
+  const o = baseOpts(`Predicho (${d.unidad})`, `Residuo (${d.unidad})`);
+  o.plugins.tooltip.callbacks = { title: () => "", label: c => c.datasetIndex ? (c.datasetIndex === 1 ? "Residuo 0" : "± 2·RMSE") :
+    [`Predicho: ${fmt(c.raw.x)}`, `Residuo: ${fmt(c.raw.y)} ${d.unidad}`] };
+  const lin = (y, dash, col) => ({ type: "line", data: [{ x: plo, y }, { x: phi, y }], borderColor: col, borderWidth: dash ? 1.5 : 2, pointRadius: 0, borderDash: dash || [] });
+  mkChart("ch-res", { type: "scatter", options: o, data: { datasets: [
+    { data: puntos(d.pred, d.resid), backgroundColor: hexA(acc, n > 5000 ? .35 : .55), pointRadius: radio(n), pointHoverRadius: 6,
+      pointHoverBackgroundColor: acc, pointHoverBorderColor: tok("--surface"), pointHoverBorderWidth: 2 },
+    lin(0, null, tok("--ink")), lin(2 * rmse, [4, 4], tok("--muted")), lin(-2 * rmse, [4, 4], tok("--muted")) ] } });
+}
+
+function chartHist() {
+  const d = D[actual], v = d.ui.h, arr = d.cols[v], st = d.stats[v], acc = tok("--acc");
+  let labels = [], counts = [], rangos = [];
+  const uniq = [...new Set(arr)].sort((a, b) => a - b);
+  if (st.ent && uniq.length <= 31) {
+    const idx = new Map(uniq.map((u, i) => [u, i])); counts = uniq.map(() => 0);
+    arr.forEach(x => counts[idx.get(x)]++); labels = uniq.map(u => fmt(u)); rangos = labels;
+  } else {
+    const B = 24, w = (st.max - st.min) / B; counts = new Array(B).fill(0);
+    arr.forEach(x => counts[Math.min(B - 1, Math.floor((x - st.min) / w))]++);
+    for (let i = 0; i < B; i++) { const a = st.min + i * w; labels.push(fmt(a + w / 2)); rangos.push(`${fmt(a)} – ${fmt(a + w)}`); }
+  }
+  let m = 0; arr.forEach(x => m += x); m /= arr.length;
+  $("h-sub").textContent = `${LBL[v]}: media ${fmt(m)}, mediana ${fmt(st.med)}, mínimo ${fmt(st.min)}, máximo ${fmt(st.max)} ${UNI[v]}.`;
+  const o = baseOpts(ttl(v), "Registros");
+  o.scales.x = { ...o.scales.x, type: "category", ticks: { color: tok("--muted"), maxTicksLimit: 9, autoSkip: true, maxRotation: 0 }, grid: { display: false } };
+  o.scales.y.beginAtZero = true; o.scales.y.ticks.callback = x => nf(x, 0);
+  o.interaction = { mode: "index", intersect: false };
+  o.plugins.tooltip.callbacks = { title: c => `${LBL[v]}: ${rangos[c[0].dataIndex]} ${UNI[v]}`,
+    label: c => `${nf(c.raw, 0)} registros (${nf(c.raw / arr.length * 100, 1)} %)` };
+  mkChart("ch-hist", { type: "bar", options: o, data: { labels, datasets: [{ data: counts, backgroundColor: acc,
+    hoverBackgroundColor: tok("--ink"), borderColor: tok("--surface"), borderWidth: { left: 1, right: 1, top: 0, bottom: 0 },
+    borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", barPercentage: 1, categoryPercentage: 1 }] } });
+}
+
+function renderCoefs() {
+  const d = D[actual], pos = tok("--pos"), neg = tok("--neg");
+  const ICON_OKs = ICON_OK, ICON_Ws = ICON_W;
+  const filas = [...d.res.coeficientes].sort((a, b) => Math.abs(b.beta_estandarizado) - Math.abs(a.beta_estandarizado)).map(c => {
+    const b = c.beta_estandarizado, w = Math.abs(b) * 50, sig = c.p_valor < 0.05;
+    const p = c.p_valor < 0.001 ? "< 0,001" : nf(c.p_valor, 3);
+    const bar = `<i style="background:${b >= 0 ? pos : neg};${b >= 0 ? "left:50%" : `left:${50 - w}%`};width:${Math.max(w, .6)}%"></i>`;
+    const tip = `Coeficiente ${fmt(c.coeficiente)} ${d.unidad} por ${UNI[c.variable]} · error estándar ${fmt(c.error_std)} · t = ${nf(c.t, 2)}`;
+    return `<tr title="${tip}"><td><b>${LBL[c.variable]}</b><br><span style="color:var(--muted);font-size:.78rem">${c.coeficiente >= 0 ? "+" : "−"}${fmt(Math.abs(c.coeficiente))} ${d.unidad} por ${UNI[c.variable]}</span></td>
+      <td style="width:38%"><div class="dbar">${bar}</div></td><td class="n">${nf(b, 3)}</td>
+      <td class="n">${p}<br>${sig ? `<span class="pill good">${ICON_OKs}Significativa</span>` : `<span class="pill warn">${ICON_Ws}No significativa</span>`}</td></tr>`;
+  }).join("");
+  $("coefs").innerHTML = `<thead><tr><th>Variable</th><th>β estandarizado</th><th style="text-align:right">β</th><th style="text-align:right">p-valor</th></tr></thead><tbody>${filas}</tbody>`;
+}
+
+function renderHeat() {
+  const d = D[actual], pos = tok("--pos"), neg = tok("--neg"), mid = tok("--mid"), ink = tok("--ink");
+  const col = r => mix(mid, r >= 0 ? pos : neg, Math.min(1, Math.abs(r)));
+  $("heat").innerHTML = `<thead><tr><th></th>${d.vars.map(v => `<th scope="col">${LBL[v]}</th>`).join("")}</tr></thead><tbody>` +
+    d.vars.map((a, i) => `<tr><th scope="row">${LBL[a]}</th>${d.vars.map((b, j) => {
+      const r = d.corr[i][j];
+      return `<td title="${LBL[a]} y ${LBL[b]}: r = ${nf(r, 4)}" style="background:${col(r)};color:${Math.abs(r) > 0.55 ? "#fff" : ink}">${nf(Math.abs(r) < 0.005 ? 0 : r, 2)}</td>`;
+    }).join("")}</tr>`).join("") + "</tbody>";
+  $("ley-barra").style.background = `linear-gradient(90deg, ${neg}, ${mid}, ${pos})`;
+}
+
+function renderTabla() {
+  const d = D[actual], u = d.ui, rmse = d.res.metricas.prueba.RMSE;
+  const cols = [...d.vars, "_pred", "_res"];
+  const nom = c => c === "_pred" ? "Predicho" : c === "_res" ? "Residuo" : LBL[c];
+  const val = (c, i) => c === "_pred" ? d.pred[i] : c === "_res" ? d.resid[i] : d.cols[c][i];
+  let idx = [...Array(d.n).keys()];
+  if (u.altos) idx = idx.filter(i => Math.abs(d.resid[i]) > 2 * rmse);
+  if (u.sort) idx.sort((a, b) => (val(u.sort, a) - val(u.sort, b)) * u.dir);
+  const pags = Math.max(1, Math.ceil(idx.length / POR_PAGINA));
+  u.page = Math.min(u.page, pags - 1);
+  const vis = idx.slice(u.page * POR_PAGINA, (u.page + 1) * POR_PAGINA);
+  const flecha = c => u.sort === c ? (u.dir > 0 ? " ▲" : " ▼") : "";
+  $("tabla").innerHTML = `<thead><tr><th scope="col" style="text-align:right">#</th>${cols.map(c =>
+    `<th scope="col" tabindex="0" data-c="${c}" aria-sort="${u.sort === c ? (u.dir > 0 ? "ascending" : "descending") : "none"}">${nom(c)}${flecha(c)}</th>`).join("")}</tr></thead><tbody>` +
+    (vis.length ? vis.map(i => `<tr><td style="color:var(--muted)">${i + 1}</td>${cols.map(c => {
+      const x = val(c, i); return `<td class="${c === "_res" && Math.abs(x) > 2 * rmse ? "alto" : ""}">${d.stats[c]?.ent ? x : fmt(x)}</td>`;
+    }).join("")}</tr>`).join("") : `<tr><td colspan="${cols.length + 1}" style="text-align:center;color:var(--muted)">No hay registros con ese filtro.</td></tr>`) + "</tbody>";
+  $("pg-info").textContent = `${nf(idx.length, 0)} registros${u.altos ? ` con |residuo| > ${fmt(2 * rmse)} ${d.unidad}` : ""} · página ${u.page + 1} de ${nf(pags, 0)}`;
+  $("pg-prev").disabled = u.page === 0; $("pg-next").disabled = u.page >= pags - 1;
+  $("solo-altos").checked = u.altos;
+}
+
+function renderCharts() { chartScatter(); chartRP(); chartHist(); chartRes(); renderCoefs(); renderHeat(); }
+function renderTodo() { renderTabs(); renderResumen(); renderSim(); renderSelects(); renderCharts(); renderTabla(); }
+
+// ---------- Eventos ----------
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-k]"); if (!b || b.dataset.k === actual) return;
+  actual = b.dataset.k; try { history.replaceState(null, "", "#" + actual); } catch (_) {}
+  renderTodo();
+});
+$("sel-x").addEventListener("change", e => { D[actual].ui.x = e.target.value; chartScatter(); });
+$("sel-h").addEventListener("change", e => { D[actual].ui.h = e.target.value; chartHist(); });
+$("sim-in").addEventListener("input", e => {
+  const f = e.target.dataset.f; if (!f) return;
+  const v = parseFloat(e.target.value); if (Number.isNaN(v)) return;
+  D[actual].ui.sim[f] = v;
+  if (e.target.type === "range") $("num-" + f).value = +v.toPrecision(6); else $("rng-" + f).value = v;
+  updateSim();
+});
+function ordenar(c) { const u = D[actual].ui; if (u.sort === c) u.dir *= -1; else { u.sort = c; u.dir = c === "_res" ? -1 : 1; } u.page = 0; renderTabla(); }
+$("tabla").addEventListener("click", e => { const th = e.target.closest("th[data-c]"); if (th) ordenar(th.dataset.c); });
+$("tabla").addEventListener("keydown", e => { const th = e.target.closest("th[data-c]"); if (th && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); ordenar(th.dataset.c); } });
+$("pg-prev").addEventListener("click", () => { D[actual].ui.page--; renderTabla(); });
+$("pg-next").addEventListener("click", () => { D[actual].ui.page++; renderTabla(); });
+$("solo-altos").addEventListener("change", e => { const u = D[actual].ui; u.altos = e.target.checked; u.page = 0; if (u.altos && !u.sort) { u.sort = "_res"; u.dir = -1; } renderTabla(); });
+
+// Volver a dibujar las gráficas cuando cambia el tema claro/oscuro
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderCharts);
+new MutationObserver(renderCharts).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+const h = location.hash.slice(1); if (D[h]) actual = h;
+if (window.Chart) {
+  Chart.defaults.font.family = getComputedStyle(document.body).getPropertyValue("--font-b") || "system-ui";
+  Chart.defaults.font.size = 12;
+}
+renderTodo();
+</script>
